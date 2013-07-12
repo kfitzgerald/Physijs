@@ -1,6 +1,6 @@
 'use strict';
 
-window.Physijs = (function() {
+module.exports = function(THREE, Ammo) {
 	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
 		SUPPORT_TRANSFERABLE,
 		_matrix = new THREE.Matrix4, _is_simulating = false,
@@ -393,18 +393,7 @@ window.Physijs = (function() {
 		Eventable.call( this );
 		THREE.Scene.call( this );
 
-		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
-		this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
-		this._materials = {};
-		this._objects = {};
-		this._vehicles = {};
-		this._constraints = {};
-
-		var ab = new ArrayBuffer( 1 );
-		this._worker.transferableMessage( ab, [ab] );
-		SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
-
-		this._worker.onmessage = function ( event ) {
+		var workerToSceneMessageHandler = function ( event ) {
 			var _temp,
 				data = event.data;
 
@@ -486,6 +475,24 @@ window.Physijs = (function() {
 			}
 		};
 
+		//this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
+		//this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
+		
+		this._worker = require('./physijs_worker.js')(workerToSceneMessageHandler, Ammo);
+		var _worker = this._worker;
+		this._worker.postMessage = function(x) {
+			_worker.sceneToWorkerMessageHandler({data:x});
+		};
+		this._worker.transferableMessage = this._worker.postMessage;
+		
+		this._materials = {};
+		this._objects = {};
+		this._vehicles = {};
+		this._constraints = {};
+
+		var ab = new ArrayBuffer( 1 );
+		this._worker.transferableMessage( ab, [ab] );
+		SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
 
 		params = params || {};
 		params.ammo = Physijs.scripts.ammo || 'ammo.js';
@@ -509,6 +516,8 @@ window.Physijs = (function() {
 			if ( object === undefined ) {
 				continue;
 			}
+			
+			console.log(data[offset+2])
 
 			if ( object.__dirtyPosition === false ) {
 				object.position.set(
@@ -1398,4 +1407,5 @@ window.Physijs = (function() {
 	};
 
 	return Physijs;
-})();
+}
+

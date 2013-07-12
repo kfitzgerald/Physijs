@@ -1,3 +1,9 @@
+This is a patched version, to use physi.js on node.js
+======================================================
+
+I hat to patch ammo.js. Just add at the end: module.exports = this.Ammo;
+
+
 Physijs
 =======
 #### Physics plugin for [three.js](https://github.com/mrdoob/three.js)
